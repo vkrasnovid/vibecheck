@@ -1,6 +1,5 @@
 import { test, expect } from '@playwright/test';
 
-// Mock API to prevent real calls
 test.beforeEach(async ({ page }) => {
   await page.route('/api/analyze', route => route.fulfill({
     status: 200,

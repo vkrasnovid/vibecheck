@@ -25,7 +25,6 @@ test.describe('Landing Page', () => {
 
   test('example chips are visible', async ({ page }) => {
     await page.goto('/');
-    // At least one chip button should be visible
     const chips = page.locator('button').filter({ hasText: /email|breakup|apology|salad|love/i });
     await expect(chips.first()).toBeVisible({ timeout: 15000 });
   });
