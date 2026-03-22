@@ -10,9 +10,7 @@ const STORM_FIXTURE = {
   red_flag_phrases: ['no rush at all'],
   subtext: 'Seething with restrained fury disguised as politeness.',
   rewrite_suggestion: 'Hi, I need a response on this by Friday.',
-  particles: [
-    { word: 'following', emotion: 'anger', weight: 0.9 },
-  ],
+  particles: [{ word: 'following', emotion: 'anger', weight: 0.9 }],
 };
 
 test.describe('Share Mechanism', () => {
@@ -23,10 +21,10 @@ test.describe('Share Mechanism', () => {
     await page.goto('/');
     await page.locator('textarea').fill(VALID_TEXT);
     await page.getByRole('button', { name: /Read My Vibe/i }).click();
-    await expect(page.getByText(/Storm|Seething/i)).toBeVisible({ timeout: 8000 });
+    await expect(page.getByText(/Storm|Seething/i).first()).toBeVisible({ timeout: 15000 });
 
     // Share button in sidebar
-    await expect(page.getByRole('button', { name: /Share your vibe|Screenshot.*Share/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Share your vibe/i })).toBeVisible();
   });
 
   test('share button click adds ?v= to URL', async ({ page }) => {
@@ -39,15 +37,15 @@ test.describe('Share Mechanism', () => {
     await page.goto('/');
     await page.locator('textarea').fill(VALID_TEXT);
     await page.getByRole('button', { name: /Read My Vibe/i }).click();
-    await expect(page.getByText(/Storm|Seething/i)).toBeVisible({ timeout: 8000 });
+    await expect(page.getByText(/Storm|Seething/i).first()).toBeVisible({ timeout: 15000 });
 
-    await page.getByRole('button', { name: /Share your vibe|Screenshot.*Share/i }).click();
+    await page.getByRole('button', { name: /Share your vibe/i }).click();
 
     // URL should now contain ?v=
-    await expect(page).toHaveURL(/\?v=/, { timeout: 3000 });
+    await expect(page).toHaveURL(/\?v=/, { timeout: 5000 });
   });
 
-  test('navigating to URL with ?v= param auto-fills textarea', async ({ page }) => {
+  test('navigating to URL with ?v= param auto-fills and submits', async ({ page }) => {
     // Encode a simple text (base64url)
     const text = 'Hello this is a test text to share with vibecheck application';
     const encoded = Buffer.from(encodeURIComponent(text)).toString('base64')
@@ -60,18 +58,25 @@ test.describe('Share Mechanism', () => {
 
     await page.goto(`/?v=${encoded}`);
 
-    // Textarea should be filled with the decoded text OR result should appear
-    // (auto-submit fires, so either the textarea is filled or result is shown)
-    const textarea = page.locator('textarea');
-    const resultVisible = page.getByText(/Storm|Seething/i);
+    // Result should appear (auto-submit fires)
+    await expect(page.getByText(/Storm|Seething/i).first()).toBeVisible({ timeout: 15000 });
+  });
 
-    // Either the textarea gets filled, or the analysis completes
-    await Promise.race([
-      expect(textarea).toHaveValue(text, { timeout: 8000 }),
-      expect(resultVisible).toBeVisible({ timeout: 8000 }),
-    ]).catch(() => {
-      // At minimum check the textarea value
-      return expect(textarea).not.toHaveValue('', { timeout: 1000 });
+  test('share URL copies to clipboard', async ({ page }) => {
+    await page.route('/api/analyze', async route => {
+      await route.fulfill({ json: STORM_FIXTURE, status: 200 });
     });
+    await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
+
+    await page.goto('/');
+    await page.locator('textarea').fill(VALID_TEXT);
+    await page.getByRole('button', { name: /Read My Vibe/i }).click();
+    await expect(page.getByText(/Storm|Seething/i).first()).toBeVisible({ timeout: 15000 });
+
+    // Click share button
+    await page.getByRole('button', { name: /Share your vibe/i }).click();
+    
+    // Wait for "Copied to clipboard" message
+    await expect(page.getByText(/Copied to clipboard/i)).toBeVisible({ timeout: 3000 });
   });
 });

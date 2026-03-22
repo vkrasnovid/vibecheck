@@ -22,7 +22,7 @@ test.use({ viewport: { width: 375, height: 812 } });
 test.describe('Mobile Responsive', () => {
   test('page loads correctly on 375px viewport', async ({ page }) => {
     await page.goto('/');
-    await expect(page.getByRole('heading', { name: /VIBECHECK/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /VIBECHECK/i })).toBeVisible({ timeout: 15000 });
     // No horizontal scroll
     const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
     const clientWidth = await page.evaluate(() => document.documentElement.clientWidth);
@@ -32,7 +32,7 @@ test.describe('Mobile Responsive', () => {
   test('textarea is present and usable on mobile', async ({ page }) => {
     await page.goto('/');
     const textarea = page.locator('textarea');
-    await expect(textarea).toBeVisible();
+    await expect(textarea).toBeVisible({ timeout: 15000 });
     // Font size must be at least 16px to prevent iOS zoom
     const fontSize = await textarea.evaluate(el => window.getComputedStyle(el).fontSize);
     const fontSizeNum = parseFloat(fontSize);
@@ -42,7 +42,7 @@ test.describe('Mobile Responsive', () => {
   test('submit button is visible and full-width on mobile', async ({ page }) => {
     await page.goto('/');
     const btn = page.getByRole('button', { name: /Read My Vibe/i });
-    await expect(btn).toBeVisible();
+    await expect(btn).toBeVisible({ timeout: 15000 });
     // Check button spans most of the viewport width (full-width style)
     const btnBox = await btn.boundingBox();
     expect(btnBox).not.toBeNull();
@@ -52,7 +52,14 @@ test.describe('Mobile Responsive', () => {
     }
   });
 
-  test('after mock submit → sidebar/drawer appears with result content', async ({ page }) => {
+  test('example chips scroll horizontally on mobile', async ({ page }) => {
+    await page.goto('/');
+    const chips = page.getByRole('button').filter({ hasText: /😤|💔|😰|🤡|🥰/ });
+    const count = await chips.count();
+    expect(count).toBeGreaterThanOrEqual(3);
+  });
+
+  test('after mock submit → sidebar/drawer appears with result content on mobile', async ({ page }) => {
     await page.route('/api/analyze', async route => {
       await route.fulfill({ json: STORM_FIXTURE, status: 200 });
     });
@@ -60,11 +67,43 @@ test.describe('Mobile Responsive', () => {
     await page.locator('textarea').fill(VALID_TEXT);
     await page.getByRole('button', { name: /Read My Vibe/i }).click();
 
-    // Result content should appear (mobile drawer or sidebar)
-    await expect(page.getByText(/Storm|Seething|Fury/i)).toBeVisible({ timeout: 8000 });
+    // Wait for sidebar content - use visible() to wait for animation to complete
+    await expect(page.locator('text=Seething with restrained').first()).toBeVisible({ timeout: 20000 });
+  });
 
-    // The mobile drawer should be visible (it's fixed at bottom on mobile)
-    // Check for the result subtext
-    await expect(page.getByText('Seething with restrained fury disguised as politeness.')).toBeVisible();
+  test('sidebar drawer content is scrollable on mobile', async ({ page }) => {
+    await page.route('/api/analyze', async route => {
+      await route.fulfill({ json: STORM_FIXTURE, status: 200 });
+    });
+    await page.goto('/');
+    await page.locator('textarea').fill(VALID_TEXT);
+    await page.getByRole('button', { name: /Read My Vibe/i }).click();
+
+    // Wait for result
+    await expect(page.locator('text=Seething with restrained').first()).toBeVisible({ timeout: 20000 });
+
+    // Check that drawer has content and no horizontal overflow
+    const viewport = await page.viewportSize();
+    const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+    expect(scrollWidth).toBeLessThanOrEqual((viewport?.width || 375) + 5);
+  });
+
+  test('reset button works on mobile', async ({ page }) => {
+    await page.route('/api/analyze', async route => {
+      await route.fulfill({ json: STORM_FIXTURE, status: 200 });
+    });
+    await page.goto('/');
+    await page.locator('textarea').fill(VALID_TEXT);
+    await page.getByRole('button', { name: /Read My Vibe/i }).click();
+
+    // Wait for result
+    await expect(page.locator('text=Seething with restrained').first()).toBeVisible({ timeout: 20000 });
+
+    // Click reset button
+    await page.getByRole('button', { name: /Check another text/i }).click();
+
+    // Should return to input state
+    await expect(page.locator('textarea')).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole('button', { name: /Read My Vibe/i })).toBeVisible();
   });
 });

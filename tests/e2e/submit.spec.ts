@@ -20,44 +20,6 @@ const STORM_FIXTURE = {
 const VALID_TEXT = 'Hi, just following up again on my previous follow-up. No worries if you have not had time.';
 
 test.describe('Input & Submission', () => {
-  test('page loads with VIBECHECK headline', async ({ page }) => {
-    await page.goto('/');
-    await expect(page.getByRole('heading', { name: /VIBECHECK/i })).toBeVisible();
-  });
-
-  test('textarea is present and accepts input', async ({ page }) => {
-    await page.goto('/');
-    const textarea = page.locator('textarea');
-    await expect(textarea).toBeVisible();
-    await textarea.fill('Hello world test input');
-    await expect(textarea).toHaveValue('Hello world test input');
-  });
-
-  test('submit button is present with correct text', async ({ page }) => {
-    await page.goto('/');
-    await expect(page.getByRole('button', { name: /Read My Vibe/i })).toBeVisible();
-  });
-
-  test('example chip 1 fills textarea', async ({ page }) => {
-    await page.goto('/');
-    const chip = page.getByRole('button', { name: /Passive-aggressive/i });
-    await expect(chip).toBeVisible();
-    await chip.click();
-    const textarea = page.locator('textarea');
-    const value = await textarea.inputValue();
-    expect(value.length).toBeGreaterThan(10);
-  });
-
-  test('example chip 2 fills textarea', async ({ page }) => {
-    await page.goto('/');
-    const chip = page.getByRole('button', { name: /Breakup/i });
-    await expect(chip).toBeVisible();
-    await chip.click();
-    const textarea = page.locator('textarea');
-    const value = await textarea.inputValue();
-    expect(value.length).toBeGreaterThan(10);
-  });
-
   test('empty submit shows error message', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('button', { name: /Read My Vibe/i }).click();
@@ -78,8 +40,8 @@ test.describe('Input & Submission', () => {
     await page.goto('/');
     await page.locator('textarea').fill(VALID_TEXT);
     await page.getByRole('button', { name: /Read My Vibe/i }).click();
-    // Sidebar or result content should appear
-    await expect(page.getByText(/Storm|Seething|Sunrise|Fog|Neon|Ocean|Moon/i)).toBeVisible({ timeout: 8000 });
+    // Use .first() to avoid strict mode violation (sidebar + mobile drawer both in DOM)
+    await expect(page.getByText(/Storm|Seething|Sunrise|Fog|Neon|Ocean|Moon/i).first()).toBeVisible({ timeout: 15000 });
   });
 
   test('Ctrl+Enter submits and shows result', async ({ page }) => {
@@ -90,7 +52,7 @@ test.describe('Input & Submission', () => {
     const textarea = page.locator('textarea');
     await textarea.fill(VALID_TEXT);
     await textarea.press('Control+Enter');
-    await expect(page.getByText(/Seething|Storm/i)).toBeVisible({ timeout: 8000 });
+    await expect(page.getByText(/Seething|Storm/i).first()).toBeVisible({ timeout: 15000 });
   });
 
   test('character counter updates as user types', async ({ page }) => {

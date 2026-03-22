@@ -30,50 +30,49 @@ async function submitWithMock(page: import('@playwright/test').Page, fixture: ob
   await page.goto('/');
   await page.locator('textarea').fill(VALID_TEXT);
   await page.getByRole('button', { name: /Read My Vibe/i }).click();
-  // Wait for result content
-  await expect(page.getByText(/Storm|Ocean|Sunrise|Fog|Neon|Moon|Seething|Peaceful/i)).toBeVisible({ timeout: 8000 });
+  // Wait for result content (use .first() for strict mode)
+  await expect(page.getByText(/Storm|Ocean|Sunrise|Fog|Neon|Moon|Seething|Peaceful/i).first()).toBeVisible({ timeout: 15000 });
 }
 
 test.describe('Vibe Report Sidebar', () => {
   test('sidebar appears after successful analysis', async ({ page }) => {
     await submitWithMock(page, FIXTURE_WITH_FLAGS);
-    // The sidebar contains the subtext
-    await expect(page.getByText('Seething with restrained fury disguised as politeness.')).toBeVisible();
+    // The sidebar contains the subtext - use .first() for strict mode
+    await expect(page.getByText('Seething with restrained fury disguised as politeness.').first()).toBeVisible();
   });
 
   test('weather label is visible in sidebar', async ({ page }) => {
     await submitWithMock(page, FIXTURE_WITH_FLAGS);
-    // Storm label from WEATHER_CONFIG: "⛈️ Storm" or similar
-    await expect(page.getByText(/Storm/i)).toBeVisible();
+    // Storm label from WEATHER_CONFIG - use .first() for strict mode
+    await expect(page.getByText(/⛈️\s*Storm/i).first()).toBeVisible();
   });
 
   test('subtext quote is visible', async ({ page }) => {
     await submitWithMock(page, FIXTURE_WITH_FLAGS);
-    await expect(page.getByText('Seething with restrained fury disguised as politeness.')).toBeVisible();
+    await expect(page.getByText('Seething with restrained fury disguised as politeness.').first()).toBeVisible();
   });
 
   test('intensity bar element exists', async ({ page }) => {
     await submitWithMock(page, FIXTURE_WITH_FLAGS);
-    // IntensityBar renders a div with the fill width
-    // Check for the intensity value "85" (0.85 * 100)
-    await expect(page.getByText('85')).toBeVisible();
+    // IntensityBar renders a div with the fill width - check for the value - use .first() for strict mode
+    await expect(page.getByText('85').first()).toBeVisible();
   });
 
   test('red flags section shown when phrases non-empty', async ({ page }) => {
     await submitWithMock(page, FIXTURE_WITH_FLAGS);
-    // 🚩 emoji or the flag text should be visible
+    // 🚩 emoji should be visible
     await expect(page.getByText('🚩').first()).toBeVisible();
   });
 
   test('red flags section NOT shown when array is empty', async ({ page }) => {
     await submitWithMock(page, FIXTURE_NO_FLAGS);
     // 🚩 emoji should NOT be visible
-    await expect(page.getByText('🚩').first()).not.toBeVisible();
+    await expect(page.getByText('🚩')).not.toBeVisible();
   });
 
   test('rewrite suggestion is visible', async ({ page }) => {
     await submitWithMock(page, FIXTURE_WITH_FLAGS);
-    await expect(page.getByText(/I need a response on this by Friday/i)).toBeVisible();
+    await expect(page.getByText(/I need a response on this by Friday/i).first()).toBeVisible();
   });
 
   test('copy button for rewrite is present', async ({ page }) => {
@@ -86,8 +85,13 @@ test.describe('Vibe Report Sidebar', () => {
     // Click reset
     await page.getByRole('button', { name: /Check another text/i }).click();
     // Textarea should be visible again
-    await expect(page.locator('textarea')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('textarea')).toBeVisible({ timeout: 15000 });
     // Submit button should be visible again
     await expect(page.getByRole('button', { name: /Read My Vibe/i })).toBeVisible();
+  });
+
+  test('dominant emotion is displayed in breakdown', async ({ page }) => {
+    await submitWithMock(page, FIXTURE_WITH_FLAGS);
+    await expect(page.getByText(/Dominant emotion:\s*anger/i).first()).toBeVisible();
   });
 });

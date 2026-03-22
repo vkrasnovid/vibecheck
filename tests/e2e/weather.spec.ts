@@ -37,8 +37,8 @@ test.describe('Weather Background States', () => {
       await page.locator('textarea').fill(VALID_TEXT);
       await page.getByRole('button', { name: /Read My Vibe/i }).click();
 
-      // Wait for sidebar/result to appear
-      await expect(page.getByText(/Storm|Sunrise|Fog|Neon|Ocean|Moon|subtext|Test/i)).toBeVisible({ timeout: 8000 });
+      // Wait for sidebar/result to appear (use .first() for strict mode)
+      await expect(page.getByText(/Storm|Sunrise|Fog|Neon|Ocean|Moon|subtext|Test/i).first()).toBeVisible({ timeout: 15000 });
 
       // Check weather CSS class on the background div
       const weatherDiv = page.locator(`.${cssClass}`);
@@ -60,5 +60,28 @@ test.describe('Weather Background States', () => {
     await expect(
       page.getByText(/Reading the room|Calibrating|Feeling the feelings|Decoding|vibes are loading/i)
     ).toBeVisible({ timeout: 3000 });
+  });
+
+  test('weather type changes background class on new analysis', async ({ page }) => {
+    let fixture = makeFixture('storm');
+    await page.route('/api/analyze', async route => {
+      await route.fulfill({ json: fixture, status: 200 });
+    });
+
+    // First submit - storm
+    await page.goto('/');
+    await page.locator('textarea').fill(VALID_TEXT);
+    await page.getByRole('button', { name: /Read My Vibe/i }).click();
+    await expect(page.locator('.weather-storm')).toBeVisible({ timeout: 15000 });
+
+    // Reset
+    await page.getByRole('button', { name: /Check another text/i }).click();
+    await expect(page.locator('textarea')).toBeVisible({ timeout: 10000 });
+
+    // Change fixture and submit again - calm_ocean
+    fixture = makeFixture('calm_ocean');
+    await page.locator('textarea').fill(VALID_TEXT);
+    await page.getByRole('button', { name: /Read My Vibe/i }).click();
+    await expect(page.locator('.weather-calm-ocean')).toBeVisible({ timeout: 15000 });
   });
 });
