@@ -110,9 +110,10 @@ export function useParticleEngine(
     updateSize();
 
     const handleResize = () => {
-      updateSize();
-      // Reset scale on resize
-      ctx.scale(dpr, dpr);
+      // updateSize already applies ctx.scale — don't call it again
+      canvas.width = window.innerWidth * dpr;
+      canvas.height = window.innerHeight * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     };
     window.addEventListener('resize', handleResize);
 

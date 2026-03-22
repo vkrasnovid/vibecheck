@@ -23,7 +23,9 @@ JSON schema you must follow EXACTLY:
 
 Weather selection: storm=anger/aggression, golden_sunrise=warmth/hope, cold_fog=detachment/numbness, electric_neon=anxiety/chaos, calm_ocean=serenity/peace, blood_moon=threat/manipulation/dark intent.`;
 
-  const userPrompt = `Analyze this text:\n\n"""\n${text}\n"""\n\nReturn the JSON analysis.`;
+  // Sanitize user input: strip XML-like tags to prevent prompt injection
+  const sanitizedText = text.replace(/<\/?[^>]+(>|$)/g, '');
+  const userPrompt = `Analyze this text:\n\n<user_input>\n${sanitizedText}\n</user_input>\n\nReturn the JSON analysis.`;
 
   return { systemPrompt, userPrompt };
 }
